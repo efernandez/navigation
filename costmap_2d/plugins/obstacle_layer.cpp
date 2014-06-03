@@ -1,6 +1,10 @@
 #include<costmap_2d/obstacle_layer.h>
 #include<costmap_2d/costmap_math.h>
 
+#include <pcl_ros/point_cloud.h>
+#include <visualization_msgs/Marker.h>
+#include <geometry_msgs/Point.h>
+
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstacleLayer, costmap_2d::Layer)
 
@@ -18,6 +22,22 @@ void ObstacleLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
   rolling_window_ = layered_costmap_->isRolling();
+
+  pc_pub_ = nh.advertise<pcl::PointCloud<pcl::PointXYZ> >("pc", 10);
+
+  line_list_.id = 0;
+  line_list_.type = visualization_msgs::Marker::LINE_LIST;
+  line_list_.ns = "raytrace";
+  line_list_.action = visualization_msgs::Marker::ADD;
+
+  line_list_.header.frame_id = "map";
+
+  line_list_.scale.x = 0.01;
+
+  line_list_.color.r = 1.0;
+  line_list_.color.a = 1.0;
+
+  marker_pub_ = nh.advertise<visualization_msgs::Marker>("/visualization_marker", 10);
 
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
@@ -317,10 +337,15 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
   current_ = current;
 
   //raytrace freespace
+  line_list_.points.clear();
+  line_list_.header.stamp = ros::Time::now();
+
   for (unsigned int i = 0; i < clearing_observations.size(); ++i)
   {
     raytraceFreespace(clearing_observations[i], min_x, min_y, max_x, max_y);
   }
+
+  marker_pub_.publish(line_list_);
 
   //place the new obstacles into a priority queue... each with a priority of zero to begin with
   for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
@@ -432,6 +457,9 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   double oy = clearing_observation.origin_.y;
   pcl::PointCloud < pcl::PointXYZ > cloud = *(clearing_observation.cloud_);
 
+  // publish point cloud
+  pc_pub_.publish(cloud);
+
   //get the map coordinates of the origin of the sensor
   unsigned int x0, y0;
   if (!worldToMap(ox, oy, x0, y0))
@@ -441,6 +469,9 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
         ox, oy);
     return;
   }
+
+  geometry_msgs::Point p0;
+  p0.x = ox; p0.y = oy; p0.z = 0.0;
 
   //we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
   double origin_x = origin_x_, origin_y = origin_y_;
@@ -495,6 +526,11 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
     //check for legality just in case
     if (!worldToMap(wx, wy, x1, y1))
       continue;
+
+    geometry_msgs::Point p1;
+    p1.x = wx; p1.y = wy; p1.z = 0.0;
+    line_list_.points.push_back(p0);
+    line_list_.points.push_back(p1);
 
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
     MarkCell marker(costmap_, FREE_SPACE);

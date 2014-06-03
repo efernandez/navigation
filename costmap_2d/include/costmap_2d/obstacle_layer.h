@@ -55,6 +55,8 @@
 #include <costmap_2d/ObstaclePluginConfig.h>
 #include <costmap_2d/footprint_layer.h>
 
+#include <visualization_msgs/Marker.h>
+
 namespace costmap_2d
 {
 class ObstacleLayer : public CostmapLayer
@@ -176,6 +178,10 @@ protected:
   FootprintLayer footprint_layer_; ///< @brief clears the footprint in this obstacle layer.
   
   int combination_method_;
+
+  ros::Publisher pc_pub_;
+  ros::Publisher marker_pub_;
+  visualization_msgs::Marker line_list_;
 
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
