@@ -107,13 +107,49 @@ namespace base_local_planner {
 
       // get plan_to_global_transform from plan frame to global_frame
       tf::StampedTransform plan_to_global_transform;
-      tf.lookupTransform(global_frame, ros::Time(), 
-          plan_pose.header.frame_id, plan_pose.header.stamp, 
-          plan_pose.header.frame_id, plan_to_global_transform);
+      try {
+        tf.lookupTransform(global_frame, ros::Time(),
+            // @todo we might look for the last instead:
+            // plan_pose.header.frame_id, ros::Time(),
+            plan_pose.header.frame_id, plan_pose.header.stamp,
+            plan_pose.header.frame_id, plan_to_global_transform);
+      }
+      catch(tf::LookupException& ex) {
+        ROS_ERROR("TF 1: No Transform available Error: %s\n", ex.what());
+        return false;
+      }
+      catch(tf::ConnectivityException& ex) {
+        ROS_ERROR("TF 1: Connectivity Error: %s\n", ex.what());
+        return false;
+      }
+      catch(tf::ExtrapolationException& ex) {
+        ROS_ERROR("TF 1: Extrapolation Error: %s\n", ex.what());
+        if (global_plan.size() > 0)
+          ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
+
+        return false;
+      }
 
       //let's get the pose of the robot in the frame of the plan
       tf::Stamped<tf::Pose> robot_pose;
-      tf.transformPose(plan_pose.header.frame_id, global_pose, robot_pose);
+      try {
+        tf.transformPose(plan_pose.header.frame_id, global_pose, robot_pose);
+      }
+      catch(tf::LookupException& ex) {
+        ROS_ERROR("TF 2: No Transform available Error: %s\n", ex.what());
+        return false;
+      }
+      catch(tf::ConnectivityException& ex) {
+        ROS_ERROR("TF 2: Connectivity Error: %s\n", ex.what());
+        return false;
+      }
+      catch(tf::ExtrapolationException& ex) {
+        ROS_ERROR("TF 2: Extrapolation Error: %s\n", ex.what());
+        if (global_plan.size() > 0)
+          ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
+
+        return false;
+      }
 
       //we'll discard points on the plan that are outside the local costmap
       double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0,
