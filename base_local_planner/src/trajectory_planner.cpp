@@ -774,6 +774,8 @@ namespace base_local_planner{
 
     for(int i = 0; i < vtheta_samples_; ++i) {
       //enforce a minimum rotational velocity because the base can't handle small in-place rotations
+      // @todo here when the it's limited we test the same many times!!!
+      // instead use the in place limits!!!
       double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_)
         : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
 
@@ -797,6 +799,7 @@ namespace base_local_planner{
         //make sure that we'll be looking at a legal cell
         if (costmap_.worldToMap(x_r, y_r, cell_x, cell_y)) {
           double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
+          // @todo check if the following is the reason of changing rotations!!!
           if (ahead_gdist < heading_dist) {
             //if we haven't already tried rotating left since we've moved forward
             if (vtheta_samp < 0 && !stuck_left) {
