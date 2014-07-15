@@ -140,6 +140,7 @@ namespace base_local_planner{
     pdist_scale_ = config.pdist_scale;
     gdist_scale_ = config.gdist_scale;
     occdist_scale_ = config.occdist_scale;
+    hdist_scale_ = config.hdist_scale;
 
     if (meter_scoring_) {
       //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
@@ -223,7 +224,7 @@ namespace base_local_planner{
       double acc_lim_x, double acc_lim_y, double acc_lim_theta,
       double sim_time, double sim_granularity,
       int vx_samples, int vtheta_samples,
-      double pdist_scale, double gdist_scale, double occdist_scale,
+      double pdist_scale, double gdist_scale, double occdist_scale, double hdist_scale,
       double heading_lookahead, double oscillation_reset_dist,
       double escape_reset_dist, double escape_reset_theta,
       bool holonomic_robot,
@@ -239,7 +240,7 @@ namespace base_local_planner{
     world_model_(world_model), footprint_spec_(footprint_spec),
     sim_time_(sim_time), sim_granularity_(sim_granularity), angular_sim_granularity_(angular_sim_granularity),
     vx_samples_(vx_samples), vtheta_samples_(vtheta_samples),
-    pdist_scale_(pdist_scale), gdist_scale_(gdist_scale), occdist_scale_(occdist_scale),
+    pdist_scale_(pdist_scale), gdist_scale_(gdist_scale), occdist_scale_(occdist_scale), hdist_scale_(hdist_scale),
     acc_lim_x_(acc_lim_x), acc_lim_y_(acc_lim_y), acc_lim_theta_(acc_lim_theta),
     prev_x_(0), prev_y_(0), escape_x_(0), escape_y_(0), escape_theta_(0), heading_lookahead_(heading_lookahead),
     oscillation_reset_dist_(oscillation_reset_dist), escape_reset_dist_(escape_reset_dist),
@@ -446,11 +447,9 @@ namespace base_local_planner{
     } // end for i < numsteps
 
     //ROS_INFO("OccCost: %f, vx: %.2f, vy: %.2f, vtheta: %.2f", occ_cost, vx_samp, vy_samp, vtheta_samp);
-    double cost = -1.0;
-    if (!heading_scoring_) {
-      cost = pdist_scale_ * path_dist + goal_dist * gdist_scale_ + occdist_scale_ * occ_cost;
-    } else {
-      cost = occdist_scale_ * occ_cost + pdist_scale_ * path_dist + 0.3 * heading_diff + goal_dist * gdist_scale_;
+    double cost = pdist_scale_ * path_dist + goal_dist * gdist_scale_ + occdist_scale_ * occ_cost;
+    if (heading_scoring_) {
+      cost += hdist_scale_ * heading_diff;
     }
     traj.cost_ = cost;
   }

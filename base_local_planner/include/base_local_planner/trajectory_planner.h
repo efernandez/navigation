@@ -90,6 +90,7 @@ namespace base_local_planner {
        * @param pdist_scale A scaling factor for how close the robot should stay to the path
        * @param gdist_scale A scaling factor for how aggresively the robot should pursue a local goal
        * @param occdist_scale A scaling factor for how much the robot should prefer to stay away from obstacles
+       * @param hdist_scale A scaling factor for how much the robot should prefer to rotate
        * @param heading_lookahead How far the robot should look ahead of itself when differentiating between different rotational velocities
        * @param oscillation_reset_dist The distance the robot must travel before it can explore rotational velocities that were unsuccessful in the past
        * @param escape_reset_dist The distance the robot must travel before it can exit escape mode
@@ -108,18 +109,19 @@ namespace base_local_planner {
        * @param simple_attractor Set this to true to allow simple attraction to a goal point instead of intelligent cost propagation
        * @param y_vels A vector of the y velocities the controller will explore
        * @param angular_sim_granularity The distance between simulation points for angular velocity should be small enough that the robot doesn't hit things
+       * @param publish_trajectorires Publish the trajectories on a marker array
        */
-      TrajectoryPlanner(WorldModel& world_model, 
-          const costmap_2d::Costmap2D& costmap, 
+      TrajectoryPlanner(WorldModel& world_model,
+          const costmap_2d::Costmap2D& costmap,
           std::vector<geometry_msgs::Point> footprint_spec,
           double acc_lim_x = 1.0, double acc_lim_y = 1.0, double acc_lim_theta = 1.0,
-          double sim_time = 1.0, double sim_granularity = 0.025, 
+          double sim_time = 1.0, double sim_granularity = 0.025,
           int vx_samples = 20, int vtheta_samples = 20,
-          double pdist_scale = 0.6, double gdist_scale = 0.8, double occdist_scale = 0.2,
+          double pdist_scale = 0.6, double gdist_scale = 0.8, double occdist_scale = 0.2, double hdist_scale = 0.3,
           double heading_lookahead = 0.325, double oscillation_reset_dist = 0.05, 
           double escape_reset_dist = 0.10, double escape_reset_theta = M_PI_2,
           bool holonomic_robot = true,
-          double max_vel_x = 0.5, double min_vel_x = 0.1, 
+          double max_vel_x = 0.5, double min_vel_x = 0.1,
           double max_vel_th = 1.0, double min_vel_th = -1.0, double min_in_place_vel_th = 0.4,
           double backup_vel = -0.1,
           bool dwa = false, bool heading_scoring = false, double heading_scoring_timestep = 0.1,
@@ -294,7 +296,7 @@ namespace base_local_planner {
       int vx_samples_; ///< @brief The number of samples we'll take in the x dimenstion of the control space
       int vtheta_samples_; ///< @brief The number of samples we'll take in the theta dimension of the control space
 
-      double pdist_scale_, gdist_scale_, occdist_scale_; ///< @brief Scaling factors for the controller's cost function
+      double pdist_scale_, gdist_scale_, occdist_scale_, hdist_scale_; ///< @brief Scaling factors for the controller's cost function
       double acc_lim_x_, acc_lim_y_, acc_lim_theta_; ///< @brief The acceleration limits of the robot
 
       double prev_x_, prev_y_; ///< @brief Used to calculate the distance the robot has traveled before reseting oscillation booleans
